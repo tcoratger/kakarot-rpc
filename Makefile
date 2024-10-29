@@ -66,7 +66,7 @@ benchmark:
 	cd benchmarks && bun i && bun run benchmark
 
 docker-build: setup
-	docker build -t kakarot-rpc . -f docker/rpc/Dockerfile
+	docker build -t kakarot-rpc-thomas . -f docker/rpc/Dockerfile
 
 local-rpc-up:
 	docker compose up -d --force-recreate

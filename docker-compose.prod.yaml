@@ -48,62 +48,62 @@ services:
     volumes:
       - starknet-explorer_prod:/var/lib/postgresql/data/
 
-  postgres:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: blockscout
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: blockscout
-    networks:
-      - internal_prod
-    volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
+  # postgres:
+  #   image: postgres:13
+  #   environment:
+  #     POSTGRES_USER: blockscout
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: blockscout
+  #   networks:
+  #     - internal_prod
+  #   volumes:
+  #     - postgres_data_prod:/var/lib/postgresql/data
 
-  redis:
-    image: redis:6
-    command: redis-server --save 60 1 --loglevel warning
-    networks:
-      - internal_prod
-    volumes:
-      - redis_data_prod:/data
+  # redis:
+  #   image: redis:6
+  #   command: redis-server --save 60 1 --loglevel warning
+  #   networks:
+  #     - internal_prod
+  #   volumes:
+  #     - redis_data_prod:/data
 
-  blockscout:
-    image: blockscout/blockscout:latest
-    environment:
-      DATABASE_URL: postgres://blockscout:postgres@postgres:5432/blockscout
-      DATABASE_SSL: "false"
-      DATABASE_POOL_SIZE: 10
-      DATABASE_TIMEOUT: 5000
-      ECTO_USE_SSL: "false"
-      BLOCKSCOUT_HOST: 0.0.0.0
-      PORT: 4000
-      APP_NAME: Blockscout
-      ETHEREUM_JSONRPC_VARIANT: geth
-      ETHEREUM_JSONRPC_HTTP_URL: http://kakarot-rpc:3030
-      ETHEREUM_JSONRPC_TRACE_URL: http://kakarot-rpc:3030
-    ports:
-      - 4001:4000
-    networks:
-      - internal_prod
-    command:
-      [
-        /bin/sh,
-        -c,
-        bin/blockscout eval "Elixir.Explorer.ReleaseTasks.create_and_migrate()"
-        && bin/blockscout start,
-      ]
-    depends_on:
-      - postgres
-      - redis
+  # blockscout:
+  #   image: blockscout/blockscout:latest
+  #   environment:
+  #     DATABASE_URL: postgres://blockscout:postgres@postgres:5432/blockscout
+  #     DATABASE_SSL: "false"
+  #     DATABASE_POOL_SIZE: 10
+  #     DATABASE_TIMEOUT: 5000
+  #     ECTO_USE_SSL: "false"
+  #     BLOCKSCOUT_HOST: 0.0.0.0
+  #     PORT: 4000
+  #     APP_NAME: Blockscout
+  #     ETHEREUM_JSONRPC_VARIANT: geth
+  #     ETHEREUM_JSONRPC_HTTP_URL: http://kakarot-rpc:3030
+  #     ETHEREUM_JSONRPC_TRACE_URL: http://kakarot-rpc:3030
+  #   ports:
+  #     - 4001:4000
+  #   networks:
+  #     - internal_prod
+  #   command:
+  #     [
+  #       /bin/sh,
+  #       -c,
+  #       bin/blockscout eval "Elixir.Explorer.ReleaseTasks.create_and_migrate()"
+  #       && bin/blockscout start,
+  #     ]
+  #   depends_on:
+  #     - postgres
+  #     - redis
 
   kakarot-rpc:
-    image: ghcr.io/kkrt-labs/kakarot-rpc/node:v0.7.5
-    pull_policy: always
+    image: kakarot-rpc-thomas
+    pull_policy: never
     ports:
       - 3030:3030
     environment:
       - KAKAROT_RPC_URL=0.0.0.0:3030
-      - STARKNET_NETWORK=http://starknet:6060
+      - STARKNET_NETWORK=https://rpc-kakarot-sepolia.karnot.xyz/
       - RUST_LOG=kakarot_rpc=info
       - MONGO_CONNECTION_STRING=mongodb://mongo:mongo@mongo:27017
       - MONGO_DATABASE_NAME=kakarot-local
@@ -136,6 +136,7 @@ services:
       - --wait-for-rpc
       - --data=/data
       - --head-refresh-interval-ms=1000
+      # - --dangerously-override-starting-block=NOW-10
     ports:
       - 7171:7171
     volumes:
@@ -144,19 +145,19 @@ services:
       - internal_prod
     restart: on-failure
 
-  ### MongoDB with Mongo Express
-  mongo:
-    image: mongo:6.0.8
-    restart: always
-    ports:
-      - 27017:27017
-    volumes:
-      - mongo_data_prod:/data/db
-    networks:
-      - internal_prod
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: mongo
-      MONGO_INITDB_ROOT_PASSWORD: mongo
+  # ### MongoDB with Mongo Express
+  # mongo:
+  #   image: mongo:6.0.8
+  #   restart: always
+  #   ports:
+  #     - 27017:27017
+  #   volumes:
+  #     - mongo_data_prod:/data/db
+  #   networks:
+  #     - internal_prod
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: mongo
+  #     MONGO_INITDB_ROOT_PASSWORD: mongo
 
   indexer:
     image: quay.io/apibara/sink-mongo:0.9.2
@@ -170,7 +171,7 @@ services:
       - APIBARA_AUTH_TOKEN=""
       - MONGO_CONNECTION_STRING=mongodb://mongo:mongo@mongo:27017
       - MONGO_DATABASE_NAME=kakarot-local
-      - STARTING_BLOCK=0
+      - STARTING_BLOCK=NOW
       - STREAM_URL=http://apibara-dna:7171
       - SINK_TYPE=mongo
       - STARKNET_NETWORK=http://starknet:6060
